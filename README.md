@@ -1,10 +1,12 @@
-# unifi-docker
+# unifi-fedora
 
 ## Description
 
 This is a containerized version of [Ubiqiti Network](https://www.ubnt.com/)'s Unifi Controller version 5.
 
-Use `docker run --net=host -d jacobalberty/unifi:unifi5` to run it.
+The repo I forked this from used a Debian base container which when run from a Fedora host, frequently uses a lot more memory to load all the Debian components. I have re-based this from Fedora to save some memory.
+
+Use `docker run --net=host -d gigawatts/unifi-fedora:latest` to run it.
 
 The following options may be of use:
 
@@ -14,24 +16,18 @@ The following options may be of use:
 Example to test with
 
 ```bash
-mkdir -p unifi/data
-mkdir -p unifi/logs
-docker run --rm --net=host -e TZ='Africa/Johannesburg' -v ~/unifi/data:/var/lib/unifi -v ~/unifi/logs:/var/log/unifi --name unifi jacobalberty/unifi:unifi5
+mkdir -p ~host-src/unifi/data
+mkdir -p ~host-src/unifi/logs
+docker run --rm --net=host -e TZ='America/Chicago' -v ~/host-src/unifi/data:/opt/UniFi/data -v ~/host-src/unifi/logs:/opt/UniFi/logs --name unifi gigawatts/unifi-fedora:latest
 ```
 
 ## Volumes:
 
-### `/var/lib/unifi`
+Configuration data: `/opt/UniFi/data`
 
-Configuration data
+Log files: `/opt/UniFi/logs`
 
-### `/var/log/unifi`
 
-Log files
-
-### `/var/run/unifi`
-
-Run information
 
 ## Environment Variables:
 
@@ -57,32 +53,11 @@ TimeZone. (i.e America/Chicago)
 
 See [UniFi - Ports Used](https://help.ubnt.com/hc/en-us/articles/218506997-UniFi-Ports-Used)
 
-## Mulit-process container
 
-While micro-service patterns try to avoid running multiple processes in a container, the unifi5 container tries to follow the same process execution model intended by the original debian package and it's init script, while trying to avoid needing to run a full init system.
+## References
 
-Essentially, `dump-init` runs a simple shell wrapper script placed at `/usr/local/bin/unifi.sh`. `unifi.sh` executes and waits on the jsvc process which orchestrates running the controller as a service. The wrapper script also traps SIGTERM to issue the appropriate stop command to the unifi java `com.ubnt.ace.Launcher` process in the hopes that it helps keep the shutdown graceful.
+dumb-init
+- https://copr.fedorainfracloud.org/coprs/alsadi/dumb-init/
 
-Example seen within the container after it was started
-
-```bash
-$  docker exec -it ef081fcf6440 bash
-# ps -e -o pid,ppid,cmd | more
-  PID  PPID CMD
-    1     0 /usr/bin/dumb-init -- /usr/local/bin/unifi.sh
-    7     1 sh /usr/local/bin/unifi.sh
-    9     7 unifi -nodetach -home /usr/lib/jvm/java-8-openjdk-amd64 -classpath /usr/share/java/commons-daemon.jar:/usr/lib/unifi/lib/ace.jar -pidfile /var/run/unifi/unifi.pid -procname unifi -outfile /var/log/unifi/unifi.out.log -errfile /var/log/unifi/unifi.err.log -Dunifi.datadir=/var/lib/unifi -Dunifi.rundir=/var/run/unifi -Dunifi.logdir=/var/log/unifi -Djava.awt.headless=true -Dfile.encoding=UTF-8 -Xmx1024M -Xms32M com.ubnt.ace.Launcher start
-   10     9 unifi -nodetach -home /usr/lib/jvm/java-8-openjdk-amd64 -classpath /usr/share/java/commons-daemon.jar:/usr/lib/unifi/lib/ace.jar -pidfile /var/run/unifi/unifi.pid -procname unifi -outfile /var/log/unifi/unifi.out.log -errfile /var/log/unifi/unifi.err.log -Dunifi.datadir=/var/lib/unifi -Dunifi.rundir=/var/run/unifi -Dunifi.logdir=/var/log/unifi -Djava.awt.headless=true -Dfile.encoding=UTF-8 -Xmx1024M -Xms32M com.ubnt.ace.Launcher start
-   31    10 /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java -Xmx1024M -XX:ErrorFile=/usr/lib/unifi/data/logs/hs_err_pid<pid>.log -Dapple.awt.UIElement=true -jar /usr/lib/unifi/lib/ace.jar start
-   58    31 bin/mongod --dbpath /usr/lib/unifi/data/db --port 27117 --logappend --logpath logs/mongod.log --nohttpinterface --bind_ip 127.0.0.1
-  108     0 bash
-  116   108 ps -e -o pid,ppid,cmd
-  117   108 [bash]
-```
-
-## TODO
-
-Future work?
-
-- Don't run as root (but Unifi's Debian package does by the way...)
-- Possibly use Debian image with systemd init included (but thus far, I don't know of an official Debian systemd image to base off)
+Most of this code was borrowed from https://github.com/jacobalberty/unifi-docker
+- I just modified package names and configs to run better from a Fedora host

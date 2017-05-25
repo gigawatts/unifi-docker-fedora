@@ -2,7 +2,7 @@
 
 # vars similar to those found in unifi.init
 JSVC=$(command -v jsvc)
-PIDFILE=/var/run/unifi/unifi.pid
+PIDFILE=${RUNDIR}/unifi.pid
 JVM_OPTS="
   -Dunifi.datadir=${DATADIR}
   -Dunifi.rundir=${RUNDIR}
@@ -17,7 +17,7 @@ if [ ! -z "${JVM_INIT_HEAP_SIZE}" ]; then
 fi
 JSVC_OPTS="
   -home ${JAVA_HOME}
-  -classpath /usr/share/java/commons-daemon.jar:${BASEDIR}/lib/ace.jar
+  -classpath /usr/lib/java/commons-daemon.jar:${BASEDIR}/lib/ace.jar
   -pidfile ${PIDFILE}
   -procname unifi
   -outfile ${LOGDIR}/unifi.out.log
@@ -30,7 +30,7 @@ MAINCLASS='com.ubnt.ace.Launcher'
 trap "echo 'Stopping unifi controller service (TERM signal caught).'; ${JSVC} -nodetach -pidfile ${PIDFILE} -stop ${MAINCLASS} stop; exit 0" 1 2 15
 
 # Cleaning /var/run/unifi/* See issue #26, Docker takes care of exlusivity in the container anyway.
-rm -f /var/run/unifi/unifi.pid
+rm -f ${RUNDIR}/unifi.pid
 
 # keep attached to shell so we can wait on it
 echo 'Starting unifi controller service.'
